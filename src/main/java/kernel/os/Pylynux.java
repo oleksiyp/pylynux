@@ -34,10 +34,7 @@ public class Pylynux implements SystemOperations {
     public String[] list(String path) {
         PathResolver resolver = new PathResolver(currentDirectory, path);
         Directory dir = resolver.resolve(Directory.class);
-        if (!dir.checkHasAccess(userId, groupId,
-                FileSystemObject.Action.EXECUTE)) {
-            throw new RuntimeException("no access");
-        }
+        checkAccess(dir, FileSystemObject.Action.EXECUTE);
         return dir.list();
     }
 
@@ -45,11 +42,9 @@ public class Pylynux implements SystemOperations {
     public void mkdir(String path) {
         PathResolver resolver = new PathResolver(currentDirectory, path);
         resolver.lastComponentShouldNonExistent();
+
         Directory dir = resolver.resolve(Directory.class);
-        if (!dir.checkHasAccess(userId, groupId,
-                FileSystemObject.Action.EXECUTE)) {
-            throw new RuntimeException("no access");
-        }
+        checkAccess(dir, FileSystemObject.Action.EXECUTE);
 
         Directory newDir = dir.newDirectory(resolver.getLastComponent());
 
@@ -67,10 +62,7 @@ public class Pylynux implements SystemOperations {
     public void chdir(String path) {
         PathResolver resolver = new PathResolver(currentDirectory, path);
         Directory dir = resolver.resolve(Directory.class);
-        if (!dir.checkHasAccess(userId, groupId,
-                FileSystemObject.Action.EXECUTE)) {
-            throw new RuntimeException("no access");
-        }
+        checkAccess(dir, FileSystemObject.Action.EXECUTE);
         currentDirectory = dir;
     }
 
@@ -159,11 +151,15 @@ public class Pylynux implements SystemOperations {
     @Override
     public void chmod(String path, int value) {
         PathResolver pathResolver = new PathResolver(currentDirectory, path);
-        FileSystemObject resolve = pathResolver.resolve(FileSystemObject.class);
-        if (!resolve.checkHasAccess(userId, groupId,
-                FileSystemObject.Action.WRITE)) {
+        FileSystemObject fsObject = pathResolver.resolve(FileSystemObject.class);
+        checkAccess(fsObject, FileSystemObject.Action.WRITE);
+        fsObject.updatePermissions(value);
+    }
+
+    private void checkAccess(FileSystemObject fsObject,
+                             FileSystemObject.Action action) {
+        if (!fsObject.checkHasAccess(userId, groupId, action)) {
             throw new RuntimeException("no access");
         }
-        resolve.updatePermissions(value);
     }
 }
